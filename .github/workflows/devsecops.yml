@@ -1,40 +1,32 @@
-name: Mustapha Essafi
+name: DevSecOps
 
 on:
   push:
-    branches: [ main ]
+    branches: ["main"]
 
 jobs:
   security:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-    - name: Install dependencies
-      run: |
-        pip install --upgrade pip
-        pip install -r requirements.txt
+      - name: Install tools
+        run: pip install bandit flask
 
-    - name: SAST - Bandit
-      run: |
-        pip install bandit
-        bandit -r 
+      - name: Bandit scan
+        run: bandit -r .
 
-    - name: Dependency Scan - Safety
-      run: |
-        pip install safety
-        safety check -r requirements.txt
+      - name: Build Docker image
+        run: docker build -t flask-app .
 
-    - name: Docker Build
-      uses: docker/build-push-action@v4
-      with:
-        context: .
-        push: false
-        tags: devsecops-assignment:latest
+      - name: Trivy scan
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          image-ref: flask-app
+          severity: HIGH,CRITICAL
+          exit-code: 1
